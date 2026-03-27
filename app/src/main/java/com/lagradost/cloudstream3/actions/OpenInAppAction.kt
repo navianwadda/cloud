@@ -17,7 +17,11 @@ import com.lagradost.cloudstream3.utils.UiText
 import com.lagradost.cloudstream3.utils.txt
 import com.lagradost.cloudstream3.utils.AppContextUtils.isAppInstalled
 import com.lagradost.cloudstream3.utils.DataStoreHelper
+import android.util.Base64
+import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
 import com.lagradost.cloudstream3.utils.DrmExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.WIDEVINE_UUID
 import java.io.File
 
 fun updateDurationAndPosition(position: Long, duration: Long) {
@@ -48,29 +52,56 @@ fun makeTempM3U8Intent(
     }
 
     val outputFile = File.createTempFile("mirrorlist", ".m3u8", context.cacheDir)
-    var text = "#EXTM3U\n#EXT-X-VERSION:3"
+    var text = "#EXTM3U"
 
     result.links.forEach { link ->
-        // If this is a DRM ClearKey link, embed a clearkey:// URI so m3u8 players can decrypt it.
-        // The repo sends kid and key as Base64url (URL_SAFE, NO_PADDING, NO_WRAP) encoded bytes.
-        // The clearkey URI format is: clearkey://?<kid_base64url>=<key_base64url>
+        text += "\n\n#EXTINF:-1,${link.name}"
+
         if (link is DrmExtractorLink) {
-            val kid = link.kid
-            val key = link.key
-            if (kid != null && key != null) {
-                text += "\n#EXT-X-KEY:METHOD=SAMPLE-AES-CTR,URI=\"clearkey://?$kid=$key\",KEYFORMAT=\"identity\""
+            // Manifest type: mpd for DASH, hls for M3U8
+            val manifestType = if (link.type == ExtractorLinkType.DASH) "mpd" else "hls"
+            text += "\n#KODIPROP:inputstream=inputstream.adaptive"
+            text += "\n#KODIPROP:inputstream.adaptive.manifest_type=$manifestType"
+
+            when (link.uuid) {
+                CLEARKEY_UUID -> {
+                    // kid and key are stored as Base64url — decode back to hex for KODIPROP
+                    val kid = link.kid
+                    val key = link.key
+                    if (kid != null && key != null) {
+                        fun b64urlToHex(b64: String): String {
+                            val padded = b64 + "=".repeat((4 - b64.length % 4) % 4)
+                            return Base64.decode(padded, Base64.URL_SAFE or Base64.NO_WRAP)
+                                .joinToString("") { "%02x".format(it) }
+                        }
+                        val kidHex = b64urlToHex(kid)
+                        val keyHex = b64urlToHex(key)
+                        text += "\n#KODIPROP:inputstream.adaptive.license_type=clearkey"
+                        text += "\n#KODIPROP:inputstream.adaptive.license_key=$kidHex:$keyHex"
+                    }
+                }
+                WIDEVINE_UUID -> {
+                    val licenseUrl = link.licenseUrl
+                    if (licenseUrl != null) {
+                        text += "\n#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha"
+                        text += "\n#KODIPROP:inputstream.adaptive.license_key=$licenseUrl"
+                    }
+                }
+            }
+
+            // Pass any custom headers as EXTVLCOPT
+            link.headers["User-Agent"]?.let {
+                text += "\n#EXTVLCOPT:http-user-agent=$it"
+            }
+            link.headers["Referer"]?.let {
+                text += "\n#EXTVLCOPT:http-referrer=$it"
             }
         }
-        text += "\n#EXTINF:0,${link.name}\n${link.url}"
+
+        text += "\n${link.url}"
     }
 
-    //With subtitles it doesn't work for no reason :(
-    /*for (sub in result.subs) {
-        val normalizedName = sub.name.replace("[^a-zA-Z0-9 ]".toRegex(), "")
-        text += "\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"${normalizedName}\",DEFAULT=NO,AUTOSELECT=NO,FORCED=NO,LANGUAGE=\"${sub.languageCode}\",URI=\"${sub.url}\""
-    }*/
 
-    text += "\n#EXT-X-ENDLIST"
     outputFile.writeText(text)
 
     intent.setDataAndType(
