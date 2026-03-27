@@ -7,8 +7,10 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.ui.APIRepository
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
 import com.lagradost.cloudstream3.utils.AppContextUtils.html
+import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.StreamLogger
 import kotlin.math.max
 import kotlin.math.min
 
@@ -62,7 +64,7 @@ class RepoLinkGenerator(
         }
 
         // these act as a general filter to prevent duplication of links or names
-        val currentLinksUrls = mutableSetOf<String>()       // makes all urls unique
+        val currentLinksUrls = mutableSetOf<String>()   // makes all urls unique
         val currentSubsUrls = mutableSetOf<String>()    // makes all subs urls unique
         val lastCountedSuffix = mutableMapOf<String, UInt>()
 
@@ -100,13 +102,8 @@ class RepoLinkGenerator(
             }
         }
 
-        // ── StreamLogger: log the API call being made for this repo/episode ──
-        com.lagradost.cloudstream3.utils.StreamLogger.logApiCall(
-            apiName      = current.apiName,
-            data         = current.data,
-            episodeTitle = current.name,
-        )
-        // ─────────────────────────────────────────────────────────────────────
+        // NOTE: StreamLogger.logLoadLinks is now called inside APIRepository.loadLinks()
+        // so we get the mainUrl + credentials logged there automatically.
 
         val result = APIRepository(
             getApiFromNameNull(current.apiName) ?: throw Exception("This provider does not exist")
@@ -122,10 +119,9 @@ class RepoLinkGenerator(
                 currentSubsUrls.add(correctFile.url)
 
                 // this part makes sure that all names are unique for UX
+                val nameDecoded = correctFile.originalName.html().toString().trim()
 
-                val nameDecoded = correctFile.originalName.html().toString().trim() // `%3Ch1%3Esub%20name…` → `<h1>sub name…` → `sub name…`
-
-                val suffixCount = lastCountedSuffix.getOrDefault(nameDecoded, 0u) +1u
+                val suffixCount = lastCountedSuffix.getOrDefault(nameDecoded, 0u) + 1u
                 lastCountedSuffix[nameDecoded] = suffixCount
 
                 val updatedFile =
@@ -141,20 +137,9 @@ class RepoLinkGenerator(
             callback = { link ->
                 Log.d(TAG, "Loaded ExtractorLink: $link")
 
-                // ── StreamLogger: log every link returned by repo API ──────
-                if (link is com.lagradost.cloudstream3.utils.DrmExtractorLink) {
-                    com.lagradost.cloudstream3.utils.StreamLogger.logExtractorLink(
-                        source         = link.source,
-                        name           = link.name,
-                        url            = link.url,
-                        referer        = link.referer,
-                        type           = link.type.name,
-                        quality        = link.quality,
-                        headers        = link.headers,
-                        extractorData  = link.extractorData,
-                    )
-                    // Also log DRM fields exposed by the open-source extension
-                    com.lagradost.cloudstream3.utils.StreamLogger.logStreamPlay(
+                // ── StreamLogger: log every link the extension returns ─────
+                if (link is DrmExtractorLink) {
+                    StreamLogger.logExtractorLink(
                         source               = link.source,
                         name                 = link.name,
                         url                  = link.url,
@@ -162,6 +147,7 @@ class RepoLinkGenerator(
                         type                 = link.type.name,
                         quality              = link.quality,
                         headers              = link.headers,
+                        extractorData        = link.extractorData,
                         licenseUrl           = link.licenseUrl,
                         kid                  = link.kid,
                         key                  = link.key,
@@ -170,7 +156,7 @@ class RepoLinkGenerator(
                         keyRequestParameters = link.keyRequestParameters,
                     )
                 } else {
-                    com.lagradost.cloudstream3.utils.StreamLogger.logExtractorLink(
+                    StreamLogger.logExtractorLink(
                         source        = link.source,
                         name          = link.name,
                         url           = link.url,
@@ -181,7 +167,7 @@ class RepoLinkGenerator(
                         extractorData = link.extractorData,
                     )
                 }
-                // ─────────────────────────────────────────────────────────────
+                // ──────────────────────────────────────────────────────────
 
                 if (link.url.isBlank() || currentLinksUrls.contains(link.url)) {
                     return@loadLinks
