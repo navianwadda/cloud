@@ -660,13 +660,18 @@ object PluginManager {
             plugins[filePath] = pluginInstance
             classLoaders[loader] = pluginInstance
             urlPlugins[data.url ?: filePath] = pluginInstance
+
+            // StreamLogger: snapshot APIs before load() to diff afterwards
+            val apisBefore = synchronized(APIHolder.apis) { APIHolder.apis.toSet() }
+
             if (pluginInstance is Plugin) {
                 pluginInstance.load(context)
             } else {
                 pluginInstance.load()
             }
             Log.i(TAG, "Loaded plugin ${data.internalName} successfully")
-            // ── StreamLogger: log the loaded plugin details ────────────────
+
+            // StreamLogger: log plugin info + every newly registered API
             com.lagradost.cloudstream3.utils.StreamLogger.logPluginLoaded(
                 internalName = data.internalName,
                 manifestName = name,
@@ -674,7 +679,17 @@ object PluginManager {
                 filePath     = filePath,
                 pluginUrl    = data.url,
             )
-            // ──────────────────────────────────────────────────────────────
+            val apisAfter = synchronized(APIHolder.apis) { APIHolder.apis.toSet() }
+            (apisAfter - apisBefore).forEach { api ->
+                com.lagradost.cloudstream3.utils.StreamLogger.logApiRegistered(
+                    name              = api.name,
+                    mainUrl           = api.mainUrl,
+                    storedCredentials = api.storedCredentials,
+                    lang              = api.lang,
+                    sourcePlugin      = api.sourcePlugin,
+                )
+            }
+
             currentlyLoading = null
             true
         } catch (e: Throwable) {
