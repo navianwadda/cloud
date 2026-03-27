@@ -666,6 +666,15 @@ object PluginManager {
                 pluginInstance.load()
             }
             Log.i(TAG, "Loaded plugin ${data.internalName} successfully")
+            // ── StreamLogger: log the loaded plugin details ────────────────
+            com.lagradost.cloudstream3.utils.StreamLogger.logPluginLoaded(
+                internalName = data.internalName,
+                manifestName = name,
+                version      = version,
+                filePath     = filePath,
+                pluginUrl    = data.url,
+            )
+            // ──────────────────────────────────────────────────────────────
             currentlyLoading = null
             true
         } catch (e: Throwable) {
