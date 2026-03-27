@@ -110,18 +110,35 @@ object RepositoryManager {
 
     suspend fun parseRepository(url: String): Repository? {
         return safeAsync {
+            val resolvedUrl = convertRawGitUrl(url)
             // Take manifestVersion and such into account later
-            app.get(convertRawGitUrl(url)).parsedSafe()
+            val repo = app.get(resolvedUrl).parsedSafe<Repository>()
+            // ── StreamLogger: log the repo manifest fetch ──────────────────
+            com.lagradost.cloudstream3.utils.StreamLogger.logRepoFetch(
+                url         = resolvedUrl,
+                repoName    = repo?.name,
+                pluginLists = repo?.pluginLists,
+            )
+            // ──────────────────────────────────────────────────────────────
+            repo
         }
     }
 
     private suspend fun parsePlugins(pluginUrls: String): List<SitePlugin> {
         // Take manifestVersion and such into account later
         return try {
-            val response = app.get(convertRawGitUrl(pluginUrls))
+            val resolvedUrl = convertRawGitUrl(pluginUrls)
+            val response = app.get(resolvedUrl)
             // Normal parsed function not working?
             // return response.parsedSafe()
-            tryParseJson<Array<SitePlugin>>(response.text)?.toList() ?: emptyList()
+            val plugins = tryParseJson<Array<SitePlugin>>(response.text)?.toList() ?: emptyList()
+            // ── StreamLogger: log the plugin list fetch ────────────────────
+            com.lagradost.cloudstream3.utils.StreamLogger.logPluginListFetch(
+                pluginListUrl = resolvedUrl,
+                pluginCount   = plugins.size,
+            )
+            // ──────────────────────────────────────────────────────────────
+            plugins
         } catch (t: Throwable) {
             logError(t)
             emptyList()
@@ -153,7 +170,14 @@ object RepositoryManager {
             }
             file.createNewFile()
 
-            val body = app.get(convertRawGitUrl(pluginUrl)).okhttpResponse.body
+            val resolvedUrl = convertRawGitUrl(pluginUrl)
+            // ── StreamLogger: log the .cs3 plugin download ─────────────────
+            com.lagradost.cloudstream3.utils.StreamLogger.logPluginDownload(
+                pluginUrl = resolvedUrl,
+                filePath  = file.absolutePath,
+            )
+            // ──────────────────────────────────────────────────────────────
+            val body = app.get(resolvedUrl).okhttpResponse.body
             write(body.byteStream(), file.outputStream())
             file
         }
