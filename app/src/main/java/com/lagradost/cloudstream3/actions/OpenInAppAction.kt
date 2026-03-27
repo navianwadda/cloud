@@ -17,6 +17,7 @@ import com.lagradost.cloudstream3.utils.UiText
 import com.lagradost.cloudstream3.utils.txt
 import com.lagradost.cloudstream3.utils.AppContextUtils.isAppInstalled
 import com.lagradost.cloudstream3.utils.DataStoreHelper
+import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import java.io.File
 
 fun updateDurationAndPosition(position: Long, duration: Long) {
@@ -50,6 +51,15 @@ fun makeTempM3U8Intent(
     var text = "#EXTM3U\n#EXT-X-VERSION:3"
 
     result.links.forEach { link ->
+        // If this is a DRM link with ClearKey kid/key, embed them as an EXT-X-KEY tag
+        if (link is DrmExtractorLink) {
+            val kid = link.kid
+            val key = link.key
+            if (kid != null && key != null) {
+                // URI encodes the key material so m3u8 players can pick it up
+                text += "\n#EXT-X-KEY:METHOD=SAMPLE-AES,URI=\"data:text/plain;base64,$key\",KEYID=0x$kid,IV=0x$kid"
+            }
+        }
         text += "\n#EXTINF:0,${link.name}\n${link.url}"
     }
 
