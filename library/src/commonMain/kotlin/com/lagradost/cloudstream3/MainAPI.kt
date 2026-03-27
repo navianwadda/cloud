@@ -19,6 +19,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import com.lagradost.cloudstream3.utils.Coroutines.threadSafeListOf
+import com.lagradost.cloudstream3.utils.StreamLogger
 import com.lagradost.cloudstream3.utils.SubtitleHelper.fromCodeToLangTagIETF
 import com.lagradost.cloudstream3.utils.SubtitleHelper.fromLanguageToTagIETF
 import com.lagradost.nicehttp.RequestBodyTypes
@@ -93,7 +94,7 @@ object APIHolder {
         }
         initMap(true)
         // ── StreamLogger: log every API the plugin registers ───────────────
-        com.lagradost.cloudstream3.utils.StreamLogger.logApiRegistered(
+        StreamLogger.logApiRegistered(
             name              = plugin.name,
             mainUrl           = plugin.mainUrl,
             storedCredentials = plugin.storedCredentials,
