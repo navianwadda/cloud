@@ -206,6 +206,14 @@ class APIRepository(val api: MainAPI) {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         if (isInvalidData(data)) return false // this makes providers cleaner
+        // ── StreamLogger: log the API call with mainUrl + credentials ──────
+        com.lagradost.cloudstream3.utils.StreamLogger.logLoadLinks(
+            apiName           = api.name,
+            mainUrl           = api.mainUrl,
+            data              = data,
+            storedCredentials = api.storedCredentials,
+        )
+        // ──────────────────────────────────────────────────────────────────
         return try {
             withTimeout(getTimeout(api.loadLinksTimeoutMs)) {
                 api.loadLinks(data, isCasting, subtitleCallback, callback)
