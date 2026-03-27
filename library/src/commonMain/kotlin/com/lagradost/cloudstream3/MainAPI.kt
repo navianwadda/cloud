@@ -92,6 +92,15 @@ object APIHolder {
             apis = apis + plugin
         }
         initMap(true)
+        // ── StreamLogger: log every API the plugin registers ───────────────
+        com.lagradost.cloudstream3.utils.StreamLogger.logApiRegistered(
+            name              = plugin.name,
+            mainUrl           = plugin.mainUrl,
+            storedCredentials = plugin.storedCredentials,
+            lang              = plugin.lang,
+            sourcePlugin      = plugin.sourcePlugin,
+        )
+        // ──────────────────────────────────────────────────────────────────
     }
 
     fun removePluginMapping(plugin: MainAPI) {
