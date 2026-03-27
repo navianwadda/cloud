@@ -51,13 +51,14 @@ fun makeTempM3U8Intent(
     var text = "#EXTM3U\n#EXT-X-VERSION:3"
 
     result.links.forEach { link ->
-        // If this is a DRM link with ClearKey kid/key, embed them as an EXT-X-KEY tag
+        // If this is a DRM ClearKey link, embed a clearkey:// URI so m3u8 players can decrypt it.
+        // The repo sends kid and key as Base64url (URL_SAFE, NO_PADDING, NO_WRAP) encoded bytes.
+        // The clearkey URI format is: clearkey://?<kid_base64url>=<key_base64url>
         if (link is DrmExtractorLink) {
             val kid = link.kid
             val key = link.key
             if (kid != null && key != null) {
-                // URI encodes the key material so m3u8 players can pick it up
-                text += "\n#EXT-X-KEY:METHOD=SAMPLE-AES,URI=\"data:text/plain;base64,$key\",KEYID=0x$kid,IV=0x$kid"
+                text += "\n#EXT-X-KEY:METHOD=SAMPLE-AES-CTR,URI=\"clearkey://?$kid=$key\",KEYFORMAT=\"identity\""
             }
         }
         text += "\n#EXTINF:0,${link.name}\n${link.url}"
