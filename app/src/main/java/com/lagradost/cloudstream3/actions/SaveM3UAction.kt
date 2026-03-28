@@ -38,7 +38,7 @@ class SaveM3UAction : VideoClickAction() {
             video.name?.takeIf { it.isNotBlank() } ?: video.headerName,
             removeSpaces = false
         )
-        val fileName = "$episodeName.m3u8"
+        val fileName = "$episodeName.m3u"
         val file = File(dir, fileName)
 
         var text = "#EXTM3U"
