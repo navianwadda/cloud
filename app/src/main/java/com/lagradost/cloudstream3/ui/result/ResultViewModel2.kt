@@ -47,6 +47,8 @@ import com.lagradost.cloudstream3.ui.result.EpisodeAdapter.Companion.getPlayerAc
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
 import com.lagradost.cloudstream3.ui.WatchType
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.downloader.DownloadObjects
+import com.lagradost.cloudstream3.utils.downloader.VideoDownloadManager
 import com.lagradost.cloudstream3.utils.AppContextUtils.getNameFull
 import com.lagradost.cloudstream3.utils.AppContextUtils.isConnectedToChromecast
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
@@ -743,7 +745,7 @@ class ResultViewModel2 : ViewModel() {
                 setKey(
                     DOWNLOAD_HEADER_CACHE,
                     parentId.toString(),
-                    VideoDownloadHelper.DownloadHeaderCached(
+                    DownloadObjects.DownloadHeaderCached(
                         apiName = apiName,
                         url = url,
                         type = currentType,
@@ -760,7 +762,7 @@ class ResultViewModel2 : ViewModel() {
                         parentId.toString()
                     ), // 3 deep folder for faster acess
                     episode.id.toString(),
-                    VideoDownloadHelper.DownloadEpisodeCached(
+                    DownloadObjects.DownloadEpisodeCached(
                         name = episode.name,
                         poster = episode.poster,
                         episode = episode.episode,
@@ -2806,7 +2808,7 @@ class ResultViewModel2 : ViewModel() {
                     setKey(
                         DOWNLOAD_HEADER_CACHE,
                         mainId.toString(),
-                        VideoDownloadHelper.DownloadHeaderCached(
+                        DownloadObjects.DownloadHeaderCached(
                             apiName = apiName,
                             url = validUrl,
                             type = loadResponse.type,
