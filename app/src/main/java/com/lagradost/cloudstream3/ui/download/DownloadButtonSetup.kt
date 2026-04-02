@@ -18,8 +18,8 @@ import com.lagradost.cloudstream3.utils.DOWNLOAD_EPISODE_CACHE
 import com.lagradost.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
 import com.lagradost.cloudstream3.utils.SnackbarHelper.showSnackbar
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
-import com.lagradost.cloudstream3.utils.VideoDownloadHelper
-import com.lagradost.cloudstream3.utils.VideoDownloadManager
+import com.lagradost.cloudstream3.utils.downloader.DownloadObjects
+import com.lagradost.cloudstream3.utils.downloader.VideoDownloadManager
 import kotlinx.coroutines.MainScope
 
 object DownloadButtonSetup {
@@ -95,7 +95,7 @@ object DownloadButtonSetup {
             DOWNLOAD_ACTION_LONG_CLICK -> {
                 activity?.let { act ->
                     val length =
-                        VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(
+                        VideoDownloadManager.getDownloadFileInfo(
                             act,
                             click.data.id
                         )?.fileLength
@@ -112,19 +112,19 @@ object DownloadButtonSetup {
 
             DOWNLOAD_ACTION_PLAY_FILE -> {
                 activity?.let { act ->
-                    val parent = getKey<VideoDownloadHelper.DownloadHeaderCached>(
+                    val parent = getKey<DownloadObjects.DownloadHeaderCached>(
                         DOWNLOAD_HEADER_CACHE,
                         click.data.parentId.toString()
                     ) ?: return
 
                     val episodes = getKeys(DOWNLOAD_EPISODE_CACHE)
                         ?.mapNotNull {
-                            getKey<VideoDownloadHelper.DownloadEpisodeCached>(it)
+                            getKey<DownloadObjects.DownloadEpisodeCached>(it)
                         }
                         ?.filter { it.parentId == click.data.parentId }
 
                     val items = mutableListOf<ExtractorUri>()
-                    val allRelevantEpisodes = episodes?.sortedWith(compareBy<VideoDownloadHelper.DownloadEpisodeCached> { it.season ?: 0 }.thenBy { it.episode })
+                    val allRelevantEpisodes = episodes?.sortedWith(compareBy<DownloadObjects.DownloadEpisodeCached> { it.season ?: 0 }.thenBy { it.episode })
 
                     allRelevantEpisodes?.forEach {
                         val keyInfo = getKey<VideoDownloadManager.DownloadedFileInfo>(
