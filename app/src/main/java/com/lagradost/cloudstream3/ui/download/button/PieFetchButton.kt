@@ -23,9 +23,9 @@ import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_PLAY_FILE
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_RESUME_DOWNLOAD
 import com.lagradost.cloudstream3.ui.download.DownloadClickEvent
 import com.lagradost.cloudstream3.utils.UIHelper.popupMenuNoIcons
-import com.lagradost.cloudstream3.utils.VideoDownloadHelper
-import com.lagradost.cloudstream3.utils.VideoDownloadManager
-import com.lagradost.cloudstream3.utils.VideoDownloadManager.KEY_RESUME_PACKAGES
+import com.lagradost.cloudstream3.utils.downloader.DownloadObjects
+import com.lagradost.cloudstream3.utils.downloader.VideoDownloadManager
+import com.lagradost.cloudstream3.utils.downloader.VideoDownloadManager.KEY_RESUME_PACKAGES
 
 open class PieFetchButton(context: Context, attributeSet: AttributeSet) :
     BaseFetchButton(context, attributeSet) {
@@ -143,26 +143,9 @@ open class PieFetchButton(context: Context, attributeSet: AttributeSet) :
     }
 
     private var currentStatus: DownloadStatusTell? = null
-    /*private fun getActivity(): Activity? {
-        var context = context
-        while (context is ContextWrapper) {
-            if (context is Activity) {
-                return context
-            }
-            context = context.baseContext
-        }
-        return null
-    }
-
-    fun callback(event : DownloadClickEvent) {
-        handleDownloadClick(
-            getActivity(),
-            event
-        )
-    }*/
 
     protected fun setDefaultClickListener(
-        view: View, textView: TextView?, card: VideoDownloadHelper.DownloadEpisodeCached,
+        view: View, textView: TextView?, card: DownloadObjects.DownloadEpisodeCached,
         callback: (DownloadClickEvent) -> Unit
     ) {
         this.progressText = textView
@@ -171,7 +154,6 @@ open class PieFetchButton(context: Context, attributeSet: AttributeSet) :
             if (isZeroBytes) {
                 removeKey(KEY_RESUME_PACKAGES, card.id.toString())
                 callback(DownloadClickEvent(DOWNLOAD_ACTION_DOWNLOAD, card))
-                // callback.invoke(DownloadClickEvent(DOWNLOAD_ACTION_DOWNLOAD, data))
             } else {
                 val list = arrayListOf(
                     Pair(DOWNLOAD_ACTION_PLAY_FILE, R.string.popup_play_file),
@@ -198,54 +180,23 @@ open class PieFetchButton(context: Context, attributeSet: AttributeSet) :
                     list
                 ) {
                     callback(DownloadClickEvent(itemId, card))
-                    // callback.invoke(DownloadClickEvent(itemId, data))
                 }
             }
         }
 
         view.setOnLongClickListener {
             callback(DownloadClickEvent(DOWNLOAD_ACTION_LONG_CLICK, card))
-
-            // clickCallback.invoke(DownloadClickEvent(DOWNLOAD_ACTION_LONG_CLICK, data))
             return@setOnLongClickListener true
         }
     }
 
     open fun setDefaultClickListener(
-        card: VideoDownloadHelper.DownloadEpisodeCached,
+        card: DownloadObjects.DownloadEpisodeCached,
         textView: TextView?,
         callback: (DownloadClickEvent) -> Unit
     ) {
         setDefaultClickListener(this, textView, card, callback)
     }
-
-    /* open fun setDefaultClickListener(requestGetter: suspend BaseFetchButton.() -> List<UriRequest>) {
-        this.setOnClickListener {
-            when (this.currentStatus) {
-                null -> {
-                    setStatus(DownloadStatusTell.IsPending)
-                    ioThread {
-                        val request = requestGetter.invoke(this)
-                        if (request.size == 1) {
-                            performDownload(request.first())
-                        } else if (request.isNotEmpty()) {
-                            performFailQueueDownload(request)
-                        }
-                    }
-                }
-                DownloadStatusTell.Paused -> {
-                    resumeDownload()
-                }
-                DownloadStatusTell.Active -> {
-                    pauseDownload()
-                }
-                DownloadStatusTell.Error -> {
-                    redownload()
-                }
-                else -> {}
-            }
-        }
-    } */
 
     @MainThread
     private fun setStatusInternal(status: DownloadStatusTell?) {
