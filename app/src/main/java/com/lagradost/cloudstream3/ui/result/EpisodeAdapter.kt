@@ -28,7 +28,7 @@ import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.utils.AppContextUtils.html
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
-import com.lagradost.cloudstream3.utils.VideoDownloadHelper
+import com.lagradost.cloudstream3.utils.downloader.DownloadObjects
 import com.lagradost.cloudstream3.utils.setText
 import com.lagradost.cloudstream3.utils.txt
 import java.text.DateFormat
@@ -191,7 +191,7 @@ class EpisodeAdapter(
 
                 downloadButton.isVisible = hasDownloadSupport
                 downloadButton.setDefaultClickListener(
-                    VideoDownloadHelper.DownloadEpisodeCached(
+                    DownloadObjects.DownloadEpisodeCached(
                         name = card.name,
                         poster = card.poster,
                         episode = card.episode,
@@ -386,7 +386,7 @@ class EpisodeAdapter(
             binding.apply {
                 downloadButton.isVisible = hasDownloadSupport
                 downloadButton.setDefaultClickListener(
-                    VideoDownloadHelper.DownloadEpisodeCached(
+                    DownloadObjects.DownloadEpisodeCached(
                         name = card.name,
                         poster = card.poster,
                         episode = card.episode,
